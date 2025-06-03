@@ -8,6 +8,7 @@ import ErrorBoundary from "@/components/layout/error-boundary"
 import ClientLayoutWrapper from "@/components/layout/client-layout-wrapper"
 import UnifiedHeader from "@/components/layout/unified-header"
 import UnifiedFooter from "@/components/layout/unified-footer"
+import { AuthProvider } from "@/contexts/AuthContext"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -86,15 +87,17 @@ export default function RootLayout({
       <body className={inter.className}>
         <ErrorBoundary>
           <TooltipProvider>
-            <ClientLayoutWrapper>
-              <div className="flex flex-col min-h-screen bg-background text-foreground overflow-x-hidden">
-                <UnifiedHeader />
-                <main className="flex-1 w-full">
-                  {children}
-                </main>
-                <UnifiedFooter />
-              </div>
-            </ClientLayoutWrapper>
+            <AuthProvider>
+              <ClientLayoutWrapper>
+                <div className="flex flex-col min-h-screen bg-background text-foreground overflow-x-hidden">
+                  <UnifiedHeader />
+                  <main className="flex-1 w-full">
+                    {children}
+                  </main>
+                  <UnifiedFooter />
+                </div>
+              </ClientLayoutWrapper>
+            </AuthProvider>
             <Toaster />
           </TooltipProvider>
         </ErrorBoundary>

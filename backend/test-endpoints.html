@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Endpoint Tester</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    #results {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      min-height: 200px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>API Endpoint Tester</h1>
+  <div>
+    <button onclick="testEndpoint('/')">Test Root Endpoint</button>
+    <button onclick="testEndpoint('/api')">Test API Endpoint</button>
+    <button onclick="testEndpoint('/api/test-db')">Test DB Endpoint</button>
+    <button onclick="testEndpoint('/api/users')">Test Users Endpoint</button>
+  </div>
+  <div>
+    <h3>Results:</h3>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const resultsDiv = document.getElementById('results');
+    
+    async function testEndpoint(path) {
+      resultsDiv.textContent = `Testing ${path}...\n`;
+      try {
+        const response = await fetch(`http://localhost:3001${path}`);
+        const text = await response.text();
+        resultsDiv.textContent += `Status: ${response.status} ${response.statusText}\n\nResponse:\n${text}`;
+      } catch (error) {
+        resultsDiv.textContent += `Error: ${error.message}`;
+      }
+    }
+  </script>
+</body>
+</html> 
