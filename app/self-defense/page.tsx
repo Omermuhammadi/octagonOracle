@@ -1,78 +1,57 @@
 "use client"
 
+/// <reference types="react" />
 import { useState } from "react"
-import { AlertTriangle, Heart, Play, Shield, Phone, MapPin, Clock } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { 
+  User, Users, Shield, Calendar, BookOpen, Home, Play, 
+  AlertTriangle, Phone, MapPin, Heart, Clock 
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-const safetyTips = [
-  {
-    category: "Awareness",
-    icon: "👁️",
-    tips: [
-      "Trust your instincts - if something feels wrong, it probably is",
-      "Stay alert and avoid distractions like phones when walking alone",
-      "Be aware of your surroundings and potential escape routes",
-      "Make eye contact with people around you to show confidence",
-    ],
-  },
-  {
-    category: "Prevention",
-    icon: "🛡️",
-    tips: [
-      "Avoid walking alone in poorly lit or isolated areas",
-      "Let someone know your whereabouts and expected return time",
-      "Carry yourself with confidence and purpose",
-      "Keep your keys ready when approaching your car or home",
-    ],
-  },
-  {
-    category: "Communication",
-    icon: "📱",
-    tips: [
-      "Keep your phone charged and easily accessible",
-      "Share your location with trusted contacts when out",
-      "Learn to use emergency features on your phone",
-      "Practice calling for help in different scenarios",
-    ],
-  },
+type AgeGroup = {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+};
+
+type Scenario = {
+  key: string;
+  label: string;
+};
+
+type SafetyTip = {
+  category: string;
+  icon: string;
+  tips: string[];
+};
+
+type Technique = {
+  name: string;
+  difficulty: string;
+  description: string;
+  steps: string[];
+  videoId: string;
+  duration?: string; // Added duration as optional
+};
+
+// Age Groups and Scenarios
+const AGE_GROUPS = [
+  { key: "kids", label: "Kids", icon: <User className="w-4 h-4 mr-1" /> },
+  { key: "teens", label: "Teens", icon: <Users className="w-4 h-4 mr-1" /> },
+  { key: "adults", label: "Adults", icon: <Shield className="w-4 h-4 mr-1" /> },
+  { key: "seniors", label: "Seniors", icon: <Calendar className="w-4 h-4 mr-1" /> },
 ]
 
-const techniques = [
-  {
-    name: "Palm Strike",
-    difficulty: "Beginner",
-    description: "Effective strike using the heel of your palm",
-    videoId: "palm-strike",
-    keyPoints: ["Aim for nose or chin", "Use your whole body weight", "Follow through the target"],
-    duration: "3 min",
-  },
-  {
-    name: "Knee Strike",
-    difficulty: "Beginner",
-    description: "Powerful close-range defensive technique",
-    videoId: "knee-strike",
-    keyPoints: ["Target the groin or stomach", "Grab attacker's shoulders", "Drive knee upward forcefully"],
-    duration: "4 min",
-  },
-  {
-    name: "Wrist Escape",
-    difficulty: "Intermediate",
-    description: "Break free from wrist grabs",
-    videoId: "wrist-escape",
-    keyPoints: ["Move toward thumb", "Use circular motion", "Create space and run"],
-    duration: "5 min",
-  },
-  {
-    name: "Bear Hug Defense",
-    difficulty: "Intermediate",
-    description: "Escape from rear bear hug attacks",
-    videoId: "bear-hug",
-    keyPoints: ["Lower your center of gravity", "Step on attacker's foot", "Elbow to ribs"],
-    duration: "6 min",
-  },
+const SCENARIOS = [
+  { key: "street", label: "Street Harassment" },
+  { key: "domestic", label: "Domestic Abuse" },
+  { key: "bullying", label: "Bullying" },
+  { key: "workplace", label: "Workplace Safety" },
+  { key: "online", label: "Online Threats" },
 ]
 
 const emergencyContacts = [
@@ -84,28 +63,108 @@ const emergencyContacts = [
     description: "24/7 support and resources",
   },
   { name: "Crisis Text Line", number: "Text HOME to 741741", description: "24/7 crisis support via text" },
-]
+];
+
+const safetyTips = [
+  {
+    category: "Awareness",
+    icon: "👀",
+    tips: [
+      "Stay alert and aware of your surroundings",
+      "Avoid distractions like phones when walking alone",
+      "Trust your instincts - if something feels wrong, it probably is"
+    ]
+  },
+  {
+    category: "Prevention",
+    icon: "🚫",
+    tips: [
+      "Keep doors and windows locked",
+      "Vary your routine and be unpredictable",
+      "Park in well-lit areas"
+    ]
+  },
+  {
+    category: "De-escalation",
+    icon: "🕊️",
+    tips: [
+      "Use confident body language",
+      "Set clear boundaries",
+      "Use a calm but firm voice"
+    ]
+  }
+];
+
+const techniques = [
+  {
+    name: "Wrist Release",
+    difficulty: "Beginner",
+    description: "Basic technique to escape from wrist grabs",
+    steps: [
+      "Twist your wrist toward their thumb",
+      "Use your body weight to pull away",
+      "Create distance and escape"
+    ],
+    videoId: "wrist-release",
+    duration: "3 min" // Added duration
+  },
+  {
+    name: "Bear Hug Defense",
+    difficulty: "Intermediate",
+    description: "Escape from rear bear hug attacks",
+    steps: [
+      "Lower your center of gravity",
+      "Step on attacker's foot",
+      "Use elbows to strike"
+    ],
+    videoId: "bear-hug",
+    duration: "5 min" // Added duration
+  }
+];
 
 export default function SelfDefensePage() {
-  const [selectedTechnique, setSelectedTechnique] = useState(techniques[0])
+  const [selectedTechnique, setSelectedTechnique] = useState(techniques[0]);
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState(AGE_GROUPS[0].key);
+  const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0].key);
+  const [ageGroup, setAgeGroup] = useState("adults")
+  const [scenario, setScenario] = useState("street")
+
+  // Sidebar navigation (dummy for now)
+  const sidebarLinks = [
+    { label: "Overview", section: "overview", icon: <Home className="w-4 h-4" /> },
+    { label: "Age Groups", section: "age-groups", icon: <Users className="w-4 h-4" /> },
+    { label: "Scenarios", section: "scenarios", icon: <BookOpen className="w-4 h-4" /> },
+  ]
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a]">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-white">Women's Self-Defense Guide</h1>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            Empowering women with practical safety knowledge and defensive techniques
-          </p>
-          <div className="flex justify-center">
-            <Badge className="bg-[#d20a11]/20 text-[#d20a11] border border-[#d20a11]/30">
-              <Heart className="h-3 w-3 mr-1" />
-              Women-Focused Content
-            </Badge>
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white">
+      {/* Main Content */}
+      {/* Hero Section */}
+      <section className="w-full px-4 md:px-0 max-w-4xl mx-auto pt-16 pb-10">
+        <motion.div
+          initial={{ opacity: 0, y: -40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-fuchsia-400 via-sky-400 to-emerald-400 text-transparent bg-clip-text">
+              Women's Self-Defense Mastery
+            </h1>
+            <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-300 mb-6">
+              Learn practical, science-backed self-defense for every age, scenario, and skill level. Interactive. Empowering. Built for real life.
+            </p>
+            <div className="flex justify-center">
+              <Badge className="bg-[#d20a11]/20 text-[#d20a11] border border-[#d20a11]/30">
+                <Heart className="h-3 w-3 mr-1" />
+                Women-Focused Content
+              </Badge>
+            </div>
           </div>
-        </div>
+        </motion.div>
+      </section>
 
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
         {/* Emergency Alert */}
         <Card className="border-[#d20a11]/30 bg-[#d20a11]/10 backdrop-blur-sm">
           <CardHeader>
@@ -229,7 +288,7 @@ export default function SelfDefensePage() {
                     <div>
                       <h4 className="text-white font-medium mb-3">Key Points to Remember:</h4>
                       <ul className="space-y-2">
-                        {selectedTechnique.keyPoints.map((point, index) => (
+                        {selectedTechnique.steps.map((point, index) => (
                           <li key={index} className="text-white/70 text-sm flex items-start gap-2">
                             <div className="h-1.5 w-1.5 rounded-full bg-[#d20a11] mt-2 flex-shrink-0"></div>
                             {point}
@@ -383,7 +442,7 @@ export default function SelfDefensePage() {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
     </div>
   )
 }
