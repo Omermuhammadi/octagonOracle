@@ -309,7 +309,7 @@ export default function Dashboard() {
                     >
                       <ArrowLeftRight className="h-8 w-8 text-white" />
                     </AnimatedButton>
-                  </div>
+              </div>
 
                   <div className="space-y-6 w-full">
                     <div className="space-y-3">
@@ -342,7 +342,7 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2">
                             <Brain className="h-4 w-4" />
                             <span>Analyze Matchup</span>
-                          </div>
+                              </div>
                         )}
                       </AnimatedButton>
 
@@ -357,8 +357,8 @@ export default function Dashboard() {
                             Show Advanced Stats
                           </Label>
                         </div>
-                      </div>
-                    </div>
+                              </div>
+              </div>
                   </div>
                 </motion.div>
 
@@ -385,37 +385,37 @@ export default function Dashboard() {
                       <CardTitle className="text-white">Fighter Comparison</CardTitle>
                       <CardDescription className="text-white/70">
                         Detailed statistical breakdown between {selectedFighter1.name} and {selectedFighter2.name}
-                      </CardDescription>
-                    </CardHeader>
+                  </CardDescription>
+                </CardHeader>
                     <CardContent>
                       <Tabs value={activeTab} onValueChange={setActiveTab}>
                         <TabsList className="grid grid-cols-2 mb-8">
                           <TabsTrigger value="attributes">Attributes</TabsTrigger>
                           <TabsTrigger value="stats">Stats Breakdown</TabsTrigger>
-                        </TabsList>
+                </TabsList>
                         <TabsContent value="attributes" className="h-[400px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
                               <PolarGrid stroke="rgba(255,255,255,0.1)" />
                               <PolarAngleAxis dataKey="attribute" tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 10]} tick={{ fill: "rgba(255,255,255,0.7)" }} />
-                              <Radar
-                                name={selectedFighter1.name}
+                            <Radar
+                              name={selectedFighter1.name}
                                 dataKey={selectedFighter1.name}
                                 stroke="#00d4ff"
                                 fill="#00d4ff"
                                 fillOpacity={0.3}
-                              />
-                              <Radar
-                                name={selectedFighter2.name}
+                            />
+                            <Radar
+                              name={selectedFighter2.name}
                                 dataKey={selectedFighter2.name}
                                 stroke="#d20a11"
                                 fill="#d20a11"
                                 fillOpacity={0.3}
                               />
                               <RechartsTooltip />
-                            </RadarChart>
-                          </ResponsiveContainer>
+                          </RadarChart>
+                        </ResponsiveContainer>
                         </TabsContent>
                         <TabsContent value="stats" className="space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -472,8 +472,8 @@ export default function Dashboard() {
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </TabsContent>
+                  </div>
+                </TabsContent>
                       </Tabs>
                     </CardContent>
                   </Card>
@@ -493,7 +493,7 @@ export default function Dashboard() {
                     <CardDescription className="text-white/70">
                       Select fighters to compare or analyze
                     </CardDescription>
-                  </CardHeader>
+                      </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <div className="relative">
@@ -504,7 +504,7 @@ export default function Dashboard() {
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10 bg-[#1a1a1a] border-[#333333] text-white placeholder:text-white/50"
                         />
-                      </div>
+                          </div>
                       <Select value={selectedWeightClass} onValueChange={setSelectedWeightClass}>
                         <SelectTrigger className="bg-[#1a1a1a] border-[#333333] text-white">
                           <SelectValue placeholder="Weight Class" />
@@ -517,7 +517,7 @@ export default function Dashboard() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3">
                         <Button
                           variant="outline"
                           className="border-[#333333] text-white/70 hover:bg-[#333333] w-full"
@@ -529,7 +529,7 @@ export default function Dashboard() {
                           Reset Filters
                         </Button>
                       </div>
-                    </div>
+                          </div>
 
                     {filteredFighters.length === 0 ? (
                       <EmptyState
@@ -549,7 +549,7 @@ export default function Dashboard() {
                             <Card className="border-white/10 bg-[#1a1a1a] hover:bg-[#222222] transition-colors">
                               <CardHeader className="p-4">
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3">
                                     <div className="relative">
                                       <img
                                         src={fighter.image || "/placeholder.svg"}
@@ -557,16 +557,16 @@ export default function Dashboard() {
                                         className="h-12 w-12 rounded-lg object-cover"
                                         loading="lazy"
                                       />
-                                    </div>
+                          </div>
                                     <div>
                                       <CardTitle className="text-white text-lg">{fighter.name}</CardTitle>
                                       <CardDescription className="text-white/70">{fighter.weightClass}</CardDescription>
-                                    </div>
-                                  </div>
+                          </div>
+                        </div>
                                   <Badge variant="outline" className="border-white/20 text-white/70">
                                     {fighter.record}
                                   </Badge>
-                                </div>
+                          </div>
                               </CardHeader>
                               <CardContent className="p-4 pt-0">
                                 <div className="flex justify-between gap-2">
@@ -586,17 +586,17 @@ export default function Dashboard() {
                                   >
                                     Red Corner
                                   </AnimatedButton>
-                                </div>
+                        </div>
                               </CardContent>
                             </Card>
                           </motion.div>
                         ))}
                       </motion.div>
                     )}
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
               </motion.div>
-            </div>
+                  </div>
           </PageContainer>
         </Section>
       </main>

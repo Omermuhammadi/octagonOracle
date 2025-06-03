@@ -10,7 +10,6 @@ import {
   User,
   Settings,
   LogOut,
-  Bell,
   ChevronDown,
   BarChart3,
   Target,
@@ -40,7 +39,6 @@ const navigationItems = [
 const mockUser = {
   name: "Alex Rodriguez",
   email: "alex@example.com",
-  notifications: 3,
 }
 
 const UnifiedHeader = memo(function UnifiedHeader() {
@@ -80,7 +78,7 @@ const UnifiedHeader = memo(function UnifiedHeader() {
               </Link>
 
               {/* Desktop Navigation */}
-              <nav className="hidden lg:flex items-center gap-6" role="navigation" aria-label="Main navigation">
+              <nav className="hidden lg:flex items-center gap-8" role="navigation" aria-label="Main navigation">
                 {navigationItems.map((item) => {
                   const Icon = item.icon
                   return (
@@ -104,28 +102,6 @@ const UnifiedHeader = memo(function UnifiedHeader() {
 
               {/* Right Side Actions */}
               <div className="flex items-center gap-5">
-                {/* Notifications */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PremiumButton
-                      variant="glass"
-                      size="icon"
-                      className="relative h-12 w-12 rounded-xl flex items-center justify-center"
-                      aria-label={`Notifications (${mockUser.notifications} unread)`}
-                    >
-                      <Bell className="h-5 w-5" />
-                      {mockUser.notifications > 0 && (
-                        <Badge className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-red-500 text-xs p-0 flex items-center justify-center border-2 border-black glow-red">
-                          {mockUser.notifications}
-                        </Badge>
-                      )}
-                    </PremiumButton>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{mockUser.notifications} new notifications</p>
-                  </TooltipContent>
-                </Tooltip>
-
                 {/* User Profile Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -254,43 +230,34 @@ const UnifiedHeader = memo(function UnifiedHeader() {
                   </nav>
 
                   {/* Mobile User Section */}
-                  <div className="mt-auto">
-                    <div className="px-4 mt-6">
-                      <div className="text-xs uppercase text-white/50 font-semibold tracking-wider px-2 mb-3">Account</div>
-                      <div className="space-y-1">
-                        <Link
-                          href="/profile"
-                          className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <User className="h-5 w-5 flex-shrink-0" />
-                          Profile
-                        </Link>
-                        <Link
-                          href="/settings"
-                          className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition-colors"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <Settings className="h-5 w-5 flex-shrink-0" />
-                          Settings
-                        </Link>
-                        <button className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 w-full text-left transition-colors">
-                          <LogOut className="h-5 w-5 flex-shrink-0" />
-                          Log out
-                        </button>
-                      </div>
+                  <div className="px-4 mt-10">
+                    <div className="text-xs uppercase text-white/50 font-semibold tracking-wider px-2 mb-3">
+                      Account
                     </div>
-
-                    <div className="p-6 border-t border-white/10 mt-6">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center glow-blue">
-                          <User className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold">{mockUser.name}</p>
-                          <p className="text-white/70 text-sm">{mockUser.email}</p>
-                        </div>
-                      </div>
+                    <div className="space-y-1">
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <User className="h-5 w-5 flex-shrink-0 text-cyan-400" />
+                        <span>Profile</span>
+                      </Link>
+                      <Link
+                        href="/settings"
+                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Settings className="h-5 w-5 flex-shrink-0 text-cyan-400" />
+                        <span>Settings</span>
+                      </Link>
+                      <button
+                        className="flex w-full items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <LogOut className="h-5 w-5 flex-shrink-0" />
+                        <span>Log out</span>
+                      </button>
                     </div>
                   </div>
                 </div>
