@@ -4,7 +4,6 @@ import { jwtVerify } from 'jose';
 
 // List of paths that require authentication
 const protectedPaths = [
-  '/dashboard',
   '/profile',
   '/settings',
 ];

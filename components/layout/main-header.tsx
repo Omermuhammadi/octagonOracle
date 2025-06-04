@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   HelpCircle,
   Keyboard,
+  LogIn,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,6 +40,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { useKeyboardShortcuts, commonShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useToast } from "@/hooks/use-toast"
 import { useDebounce } from "@/hooks/use-debounce"
+import { useAuth } from "@/contexts/AuthContext"
 
 const navigationItems = [
   { name: "Dashboard", href: "/dashboard", icon: BarChart3, shortcut: "Ctrl+D" },
@@ -50,13 +52,8 @@ const navigationItems = [
   { name: "Support", href: "/support", icon: HelpCircle },
 ]
 
-// Mock user data
-const mockUser = {
-  name: "Alex Rodriguez",
-  email: "alex@example.com",
-  avatar: "/placeholder.svg?height=32&width=32",
-  notifications: 3,
-}
+// Mock user data for notifications only
+const mockNotifications = 3;
 
 const MainHeader = memo(function MainHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -66,6 +63,7 @@ const MainHeader = memo(function MainHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
+  const { user, logout } = useAuth()
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
@@ -139,6 +137,15 @@ const MainHeader = memo(function MainHeader() {
     },
     [searchQuery, router],
   )
+
+  const handleLogout = useCallback(() => {
+    logout();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out",
+      variant: "default",
+    });
+  }, [logout, toast]);
 
   return (
     <>
@@ -261,71 +268,108 @@ const MainHeader = memo(function MainHeader() {
                 </TooltipContent>
               </Tooltip>
 
-              {/* Notifications */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative text-white/70 hover:text-white focus:ring-2 focus:ring-[#00d4ff]"
-                    onClick={handleNotificationClick}
-                    aria-label={`Notifications (${mockUser.notifications} unread)`}
-                  >
-                    <Bell className="h-4 w-4" />
-                    {mockUser.notifications > 0 && (
-                      <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#d20a11] text-xs p-0 flex items-center justify-center">
-                        {mockUser.notifications}
-                      </Badge>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{mockUser.notifications} new notifications</p>
-                </TooltipContent>
-              </Tooltip>
+              {/* Notifications - Only show for authenticated users */}
+              {user && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative text-white/70 hover:text-white focus:ring-2 focus:ring-[#00d4ff]"
+                      onClick={handleNotificationClick}
+                      aria-label={`Notifications (${mockNotifications} unread)`}
+                    >
+                      <Bell className="h-4 w-4" />
+                      {mockNotifications > 0 && (
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#d20a11] text-xs p-0 flex items-center justify-center">
+                          {mockNotifications}
+                        </Badge>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{mockNotifications} new notifications</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
-              {/* User Profile Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="flex items-center gap-2 text-white/70 hover:text-white hover:bg-[#333333]/50 focus:ring-2 focus:ring-[#00d4ff]"
-                    aria-label="User menu"
-                  >
-                    <div className="h-8 w-8 rounded-full bg-[#00d4ff]/20 border border-[#00d4ff] flex items-center justify-center">
-                      <User className="h-4 w-4 text-[#00d4ff]" />
-                    </div>
-                    <span className="hidden md:block">{mockUser.name}</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-[#2a2a2a] border-[#333333]">
-                  <DropdownMenuLabel className="text-white">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{mockUser.name}</p>
-                      <p className="text-xs text-white/70">{mockUser.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-[#333333]" />
-                  <DropdownMenuItem asChild className="text-white hover:bg-[#333333] focus:bg-[#333333]">
-                    <Link href="/profile" className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="text-white hover:bg-[#333333] focus:bg-[#333333]">
-                    <Link href="/settings" className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-[#333333]" />
-                  <DropdownMenuItem className="text-[#d20a11] hover:bg-[#d20a11]/10 focus:bg-[#d20a11]/10">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* User Profile Dropdown or Sign In/Sign Up */}
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 text-white/70 hover:text-white hover:bg-[#333333]/50 focus:ring-2 focus:ring-[#00d4ff]"
+                      aria-label="User menu"
+                    >
+                      <div className="h-8 w-8 rounded-full bg-[#00d4ff]/20 border border-[#00d4ff] flex items-center justify-center">
+                        <User className="h-4 w-4 text-[#00d4ff]" />
+                      </div>
+                      <span className="hidden md:block">{user.name}</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-[#2a2a2a] border-[#333333]">
+                    <DropdownMenuLabel className="text-white">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{user.name}</p>
+                        <p className="text-xs text-white/70">{user.email}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-[#333333]" />
+                    <DropdownMenuItem asChild className="text-white hover:bg-[#333333] focus:bg-[#333333]">
+                      <Link href="/profile" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="text-white hover:bg-[#333333] focus:bg-[#333333]">
+                      <Link href="/settings" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#333333]" />
+                    <DropdownMenuItem 
+                      className="text-[#d20a11] hover:bg-[#d20a11]/10 focus:bg-[#d20a11]/10 cursor-pointer"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Log out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 text-white/70 hover:text-white hover:bg-[#333333]/50 focus:ring-2 focus:ring-[#00d4ff]"
+                      aria-label="Sign in options"
+                    >
+                      <div className="h-8 w-8 rounded-full bg-[#333333] flex items-center justify-center">
+                        <LogIn className="h-4 w-4 text-white/70" />
+                      </div>
+                      <span className="hidden md:block">Sign In</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-[#2a2a2a] border-[#333333]">
+                    <DropdownMenuItem asChild className="text-white hover:bg-[#333333] focus:bg-[#333333]">
+                      <Link href="/auth/login" className="flex items-center gap-2">
+                        <LogIn className="h-4 w-4" />
+                        Sign In
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="text-white hover:bg-[#333333] focus:bg-[#333333]">
+                      <Link href="/auth/signup" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Sign Up
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
               {/* Mobile Menu Button */}
               <Button
@@ -409,37 +453,66 @@ const MainHeader = memo(function MainHeader() {
 
                 {/* Mobile User Section */}
                 <div className="mt-8 pt-8 border-t border-[#333333]">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-full bg-[#00d4ff]/20 border border-[#00d4ff] flex items-center justify-center">
-                      <User className="h-5 w-5 text-[#00d4ff]" />
+                  {user ? (
+                    <>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-10 w-10 rounded-full bg-[#00d4ff]/20 border border-[#00d4ff] flex items-center justify-center">
+                          <User className="h-5 w-5 text-[#00d4ff]" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{user.name}</p>
+                          <p className="text-white/70 text-sm">{user.email}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Link
+                          href="/profile"
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-[#333333]/50 focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <User className="h-4 w-4" />
+                          Profile
+                        </Link>
+                        <Link
+                          href="/settings"
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-[#333333]/50 focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Settings className="h-4 w-4" />
+                          Settings
+                        </Link>
+                        <button 
+                          className="flex items-center gap-3 px-3 py-2 rounded-md text-[#d20a11] hover:bg-[#d20a11]/10 w-full text-left focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
+                          onClick={() => {
+                            handleLogout();
+                            setIsMobileMenuOpen(false);
+                          }}
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Log out
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <Link
+                        href="/auth/login"
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-[#333333]/50 focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <LogIn className="h-4 w-4" />
+                        Sign In
+                      </Link>
+                      <Link
+                        href="/auth/signup"
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-[#333333]/50 focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <User className="h-4 w-4" />
+                        Sign Up
+                      </Link>
                     </div>
-                    <div>
-                      <p className="text-white font-medium">{mockUser.name}</p>
-                      <p className="text-white/70 text-sm">{mockUser.email}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Link
-                      href="/profile"
-                      className="flex items-center gap-3 px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-[#333333]/50 focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <User className="h-4 w-4" />
-                      Profile
-                    </Link>
-                    <Link
-                      href="/settings"
-                      className="flex items-center gap-3 px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-[#333333]/50 focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <Settings className="h-4 w-4" />
-                      Settings
-                    </Link>
-                    <button className="flex items-center gap-3 px-3 py-2 rounded-md text-[#d20a11] hover:bg-[#d20a11]/10 w-full text-left focus:outline-none focus:ring-2 focus:ring-[#00d4ff]">
-                      <LogOut className="h-4 w-4" />
-                      Log out
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

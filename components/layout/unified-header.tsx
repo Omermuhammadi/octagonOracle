@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Home,
   Zap,
+  LogIn,
 } from "lucide-react"
 import { PremiumButton } from "@/components/ui/premium-button"
 import {
@@ -28,6 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 
 const navigationItems = [
   { name: "Home", href: "/", icon: Home },
@@ -36,14 +39,11 @@ const navigationItems = [
   { name: "Store", href: "/store", icon: ShoppingBag },
 ]
 
-const mockUser = {
-  name: "Alex Rodriguez",
-  email: "alex@example.com",
-}
-
 const UnifiedHeader = memo(function UnifiedHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { user, logout } = useAuth()
+  const { toast } = useToast()
 
   const isActive = useCallback(
     (href: string) => {
@@ -53,6 +53,16 @@ const UnifiedHeader = memo(function UnifiedHeader() {
     },
     [pathname],
   )
+
+  const handleLogout = useCallback(() => {
+    logout();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out",
+      variant: "default",
+    });
+    setIsMobileMenuOpen(false);
+  }, [logout, toast]);
 
   return (
     <>
@@ -102,58 +112,98 @@ const UnifiedHeader = memo(function UnifiedHeader() {
 
               {/* Right Side Actions */}
               <div className="flex items-center gap-5">
-                {/* User Profile Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <PremiumButton
-                      variant="neon"
-                      glowColor="blue"
-                      className="flex items-center gap-2 px-3 py-2 h-12 rounded-xl border border-cyan-400/30"
-                      aria-label="User menu"
-                    >
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center glow-blue overflow-hidden">
-                        <User className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="hidden md:flex items-center gap-2">
-                        <span className="font-semibold text-white text-sm">{mockUser.name}</span>
-                        <ChevronDown className="h-4 w-4 opacity-70" />
-                      </div>
-                    </PremiumButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 glass-strong border-white/20 rounded-xl p-2">
-                    <div className="px-4 py-3 border-b border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center glow-blue">
-                          <User className="h-5 w-5 text-white" />
+                {/* User Profile Dropdown or Sign In */}
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <PremiumButton
+                        variant="neon"
+                        glowColor="blue"
+                        className="flex items-center gap-2 px-3 py-2 h-12 rounded-xl border border-cyan-400/30"
+                        aria-label="User menu"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center glow-blue overflow-hidden">
+                          <User className="h-4 w-4 text-white" />
                         </div>
-                        <div className="flex flex-col">
-                          <p className="text-sm font-semibold text-white">{mockUser.name}</p>
-                          <p className="text-xs text-white/70">{mockUser.email}</p>
+                        <div className="hidden md:flex items-center gap-2">
+                          <span className="font-semibold text-white text-sm">{user.name}</span>
+                          <ChevronDown className="h-4 w-4 opacity-70" />
+                        </div>
+                      </PremiumButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64 glass-strong border-white/20 rounded-xl p-2">
+                      <div className="px-4 py-3 border-b border-white/10">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center glow-blue">
+                            <User className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex flex-col">
+                            <p className="text-sm font-semibold text-white">{user.name}</p>
+                            <p className="text-xs text-white/70">{user.email}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="p-2">
-                      <DropdownMenuItem asChild className="text-white hover:glass focus:glass px-4 py-3 rounded-lg flex items-center gap-3">
-                        <Link href="/profile">
-                          <User className="h-4 w-4 text-cyan-400" />
-                          <span>Profile</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="text-white hover:glass focus:glass px-4 py-3 rounded-lg flex items-center gap-3">
-                        <Link href="/settings">
-                          <Settings className="h-4 w-4 text-cyan-400" />
-                          <span>Settings</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    </div>
-                    <div className="p-2 border-t border-white/10">
-                      <DropdownMenuItem className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 px-4 py-3 rounded-lg flex items-center gap-3">
-                        <LogOut className="h-4 w-4" />
-                        <span>Log out</span>
-                      </DropdownMenuItem>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <div className="p-2">
+                        <DropdownMenuItem asChild className="text-white hover:glass focus:glass px-4 py-3 rounded-lg flex items-center gap-3">
+                          <Link href="/profile">
+                            <User className="h-4 w-4 text-cyan-400" />
+                            <span>Profile</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="text-white hover:glass focus:glass px-4 py-3 rounded-lg flex items-center gap-3">
+                          <Link href="/settings">
+                            <Settings className="h-4 w-4 text-cyan-400" />
+                            <span>Settings</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+                      <div className="p-2 border-t border-white/10">
+                        <DropdownMenuItem 
+                          className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 px-4 py-3 rounded-lg flex items-center gap-3 cursor-pointer"
+                          onClick={handleLogout}
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>Log out</span>
+                        </DropdownMenuItem>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <PremiumButton
+                        variant="glass"
+                        glowColor="blue"
+                        className="flex items-center gap-2 px-3 py-2 h-12 rounded-xl border border-white/20"
+                        aria-label="Sign in options"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                          <LogIn className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="hidden md:flex items-center gap-2">
+                          <span className="font-semibold text-white text-sm">Sign In</span>
+                          <ChevronDown className="h-4 w-4 opacity-70" />
+                        </div>
+                      </PremiumButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64 glass-strong border-white/20 rounded-xl p-2">
+                      <div className="p-2">
+                        <DropdownMenuItem asChild className="text-white hover:glass focus:glass px-4 py-3 rounded-lg flex items-center gap-3">
+                          <Link href="/auth/login">
+                            <LogIn className="h-4 w-4 text-cyan-400" />
+                            <span>Sign In</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="text-white hover:glass focus:glass px-4 py-3 rounded-lg flex items-center gap-3">
+                          <Link href="/auth/signup">
+                            <User className="h-4 w-4 text-cyan-400" />
+                            <span>Sign Up</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
 
                 {/* Mobile Menu Button */}
                 <PremiumButton
@@ -199,67 +249,89 @@ const UnifiedHeader = memo(function UnifiedHeader() {
                   </PremiumButton>
                 </div>
 
-                <div className="flex flex-col h-full overflow-y-auto pb-12">
-                  {/* Mobile Navigation */}
-                  <nav className="px-4 pt-6" role="navigation" aria-label="Mobile navigation">
-                    <div className="text-xs uppercase text-white/50 font-semibold tracking-wider px-2 mb-3">Menu</div>
-                    <div className="space-y-1">
-                      {navigationItems.map((item) => {
-                        const Icon = item.icon
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                              isActive(item.href)
-                                ? "text-cyan-400 glass-strong glow-blue"
-                                : "text-white/70 hover:text-white hover:bg-white/5"
-                            }`}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            aria-current={isActive(item.href) ? "page" : undefined}
-                          >
-                            <Icon className="h-5 w-5 flex-shrink-0" />
-                            <span>{item.name}</span>
-                            {isActive(item.href) && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 ml-auto" />
-                            )}
-                          </Link>
-                        )
-                      })}
-                    </div>
-                  </nav>
+                {/* Mobile Navigation */}
+                <nav className="p-6 space-y-4" role="navigation" aria-label="Mobile navigation">
+                  {navigationItems.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center gap-4 px-4 py-3 rounded-xl text-base font-semibold tracking-wide transition-all duration-300 transform-gpu ${
+                          isActive(item.href)
+                            ? "text-cyan-400 glass-strong glow-blue"
+                            : "text-white/70 hover:text-white hover:glass"
+                        }`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        aria-current={isActive(item.href) ? "page" : undefined}
+                      >
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                        {item.name}
+                        {isActive(item.href) && <div className="w-2 h-2 rounded-full bg-cyan-400 led-indicator ml-auto" />}
+                      </Link>
+                    )
+                  })}
+                </nav>
 
-                  {/* Mobile User Section */}
-                  <div className="px-4 mt-10">
-                    <div className="text-xs uppercase text-white/50 font-semibold tracking-wider px-2 mb-3">
-                      Account
-                    </div>
-                    <div className="space-y-1">
-                      <Link
-                        href="/profile"
-                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5"
-                        onClick={() => setIsMobileMenuOpen(false)}
+                {/* Mobile User Section */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-white/10">
+                  {user ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center glow-blue">
+                          <User className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-semibold text-white">{user.name}</p>
+                          <p className="text-xs text-white/70">{user.email}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Link 
+                          href="/profile" 
+                          className="flex items-center justify-center gap-2 glass text-white rounded-xl py-3 px-4 text-sm font-semibold hover:glass-strong"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <User className="h-4 w-4 text-cyan-400" />
+                          Profile
+                        </Link>
+                        <Link 
+                          href="/settings" 
+                          className="flex items-center justify-center gap-2 glass text-white rounded-xl py-3 px-4 text-sm font-semibold hover:glass-strong"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Settings className="h-4 w-4 text-cyan-400" />
+                          Settings
+                        </Link>
+                      </div>
+                      <button 
+                        className="w-full flex items-center justify-center gap-2 bg-red-500/10 text-red-400 rounded-xl py-3 px-4 text-sm font-semibold hover:bg-red-500/20"
+                        onClick={handleLogout}
                       >
-                        <User className="h-5 w-5 flex-shrink-0 text-cyan-400" />
-                        <span>Profile</span>
-                      </Link>
-                      <Link
-                        href="/settings"
-                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <Settings className="h-5 w-5 flex-shrink-0 text-cyan-400" />
-                        <span>Settings</span>
-                      </Link>
-                      <button
-                        className="flex w-full items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <LogOut className="h-5 w-5 flex-shrink-0" />
-                        <span>Log out</span>
+                        <LogOut className="h-4 w-4" />
+                        Log out
                       </button>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <Link 
+                        href="/auth/login" 
+                        className="flex items-center justify-center gap-2 glass text-white rounded-xl py-3 px-4 text-sm font-semibold hover:glass-strong"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <LogIn className="h-4 w-4 text-cyan-400" />
+                        Sign In
+                      </Link>
+                      <Link 
+                        href="/auth/signup" 
+                        className="flex items-center justify-center gap-2 glass-strong text-white rounded-xl py-3 px-4 text-sm font-semibold hover:glass-strong glow-blue"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <User className="h-4 w-4 text-cyan-400" />
+                        Sign Up
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
