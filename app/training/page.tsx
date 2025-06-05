@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import PageHeader from "@/components/layout/page-header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Check, ChevronDown, ChevronUp, Clock, Filter, Search } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SelfDefensePage from "@/app/self-defense/page";
 
 // Training paths data
 const allTrainingPaths = [
@@ -256,48 +257,51 @@ export default function TrainingPage() {
   }, [])
 
   // Filter training paths based on selected goal, age filter, and search term
-  const filteredPaths = allTrainingPaths.filter(path => {
-    const matchesGoal = selectedGoal === "All" || path.goals.includes(selectedGoal)
-    const matchesAge = ageFilter === "All Ages" || path.ageRange.includes(ageFilter)
-    const matchesSearch = searchTerm === "" || 
-                         path.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         path.description.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    return matchesGoal && matchesAge && matchesSearch
-  })
+  const filteredPaths = useMemo(() => {
+    const pathsToDisplay = allTrainingPaths.filter(path => path.id !== 5); // Exclude old Women's Self-Defense path
+    return pathsToDisplay.filter(path => {
+      const matchesGoal = selectedGoal === "All" || path.goals.includes(selectedGoal);
+      const matchesAge = ageFilter === "All Ages" || path.ageRange.includes(ageFilter);
+      const matchesSearch = searchTerm === "" ||
+        path.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        path.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesGoal && matchesAge && matchesSearch;
+    });
+  }, [selectedGoal, ageFilter, searchTerm]);
 
   // Handle path selection with loading state
   const handlePathSelect = (path: typeof allTrainingPaths[0]) => {
-    setIsLoading(true)
+    setIsLoading(true);
     setTimeout(() => {
-      setSelectedPath(path)
-      setIsLoading(false)
-    }, 300)
-  }
+      setSelectedPath(path);
+      setIsLoading(false);
+    }, 300);
+  };
 
   // Toggle module completion status
   const toggleModuleCompletion = (pathId: number, moduleName: string) => {
-    const moduleKey = `${pathId}-${moduleName}`
+    const moduleKey = `${pathId}-${moduleName}`;
     setCompletedModules(prev => ({
       ...prev,
       [moduleKey]: !prev[moduleKey]
-    }))
-  }
+    }));
+  };
 
   // Toggle module expansion
   const toggleModuleExpansion = (moduleName: string) => {
-    setExpandedModules(prev => 
-      prev.includes(moduleName) 
+    setExpandedModules(prev =>
+      prev.includes(moduleName)
         ? prev.filter(name => name !== moduleName)
         : [...prev, moduleName]
-    )
-  }
+    );
+  };
 
   // Age filter options
-  const ageOptions = ["All Ages", "10-14", "15-25", "25+", "18-30"]
+  const ageOptions = ["All Ages", "10-14", "15-25", "25+", "18-30"];
 
   // Goal options
-  const goalOptions = ["All", "Fitness", "Self-Defense", "Career", "Discipline", "Confidence", "Competition"]
+  const goalOptions = ["All", "Fitness", "Self-Defense", "Career", "Discipline", "Confidence", "Competition"];
 
   return (
     <div className="min-h-screen bg-[#1a1a1a]">
@@ -305,13 +309,16 @@ export default function TrainingPage() {
         title="Training Roadmaps"
         description="Personalized training paths designed for your age, goals, and experience level"
       />
-      
+
       <div className="container mx-auto p-6 space-y-6">
         {/* Tabs for different sections */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-[#2a2a2a] border-[#333333]">
             <TabsTrigger value="paths" className="data-[state=active]:bg-[#00d4ff] data-[state=active]:text-black">
               Training Paths
+            </TabsTrigger>
+            <TabsTrigger value="selfDefense" className="data-[state=active]:bg-[#9932cc] data-[state=active]:text-white">
+              Self Defense
             </TabsTrigger>
             <TabsTrigger value="achievements" className="data-[state=active]:bg-[#00d4ff] data-[state=active]:text-black">
               Achievements
@@ -495,6 +502,10 @@ export default function TrainingPage() {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="selfDefense">
+            <SelfDefensePage />
           </TabsContent>
 
           {/* Achievements Content */}
