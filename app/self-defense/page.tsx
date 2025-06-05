@@ -443,6 +443,47 @@ export default function SelfDefensePage() {
     setIsStoryModeActive(!isStoryModeActive);
   };
 
+  const toggleQuiz = (scenarioId: string) => {
+    setQuizStates(prevStates => ({
+      ...prevStates,
+      [scenarioId]: {
+        isOpen: !prevStates[scenarioId]?.isOpen,
+        answers: prevStates[scenarioId]?.answers || {},
+        showResults: prevStates[scenarioId]?.showResults || false,
+      }
+    }));
+  };
+
+  const handleQuizAnswer = (scenarioId: string, questionId: string, optionId: string) => {
+    setQuizStates(prevStates => {
+      const currentScenarioState = prevStates[scenarioId] || { isOpen: true, answers: {}, showResults: false };
+      return {
+        ...prevStates,
+        [scenarioId]: {
+          ...currentScenarioState,
+          answers: {
+            ...currentScenarioState.answers,
+            [questionId]: optionId,
+          },
+          showResults: false, // Keep results hidden until submission
+        }
+      };
+    });
+  };
+
+  const submitQuiz = (scenarioId: string) => {
+    setQuizStates(prevStates => {
+      const currentScenarioState = prevStates[scenarioId] || { isOpen: true, answers: {}, showResults: false };
+      return {
+        ...prevStates,
+        [scenarioId]: {
+          ...currentScenarioState,
+          showResults: true, // Now show the results
+        }
+      };
+    });
+  };
+
   const filteredScenarios = useMemo(() => {
     if (!Array.isArray(detailedScenarios)) {
       // console.warn("detailedScenarios is not an array or is undefined. Check its definition.");
