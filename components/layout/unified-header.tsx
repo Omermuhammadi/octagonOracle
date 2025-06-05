@@ -40,7 +40,6 @@ const navigationItems = [
   { name: "Gym Finder", href: "/gym-finder", icon: MapPin },
   { name: "Store", href: "/store", icon: ShoppingBag },
 ]
-
 const UnifiedHeader = memo(function UnifiedHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
@@ -165,46 +164,26 @@ const UnifiedHeader = memo(function UnifiedHeader() {
                           onClick={handleLogout}
                         >
                           <LogOut className="h-4 w-4" />
-                          <span>Log out</span>
+                          <span>Logout</span>
                         </DropdownMenuItem>
                       </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <PremiumButton
-                        variant="glass"
-                        glowColor="blue"
-                        className="flex items-center gap-2 px-3 py-2 h-12 rounded-xl border border-white/20"
-                        aria-label="Sign in options"
-                      >
-                        <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
-                          <LogIn className="h-4 w-4 text-white" />
-                        </div>
-                        <div className="hidden md:flex items-center gap-2">
-                          <span className="font-semibold text-white text-sm">Sign In</span>
-                          <ChevronDown className="h-4 w-4 opacity-70" />
-                        </div>
+                  <div className="flex items-center gap-3">
+                    <Link href="/auth/login" passHref>
+                      <PremiumButton variant="glass" glowColor="blue" className="h-12 px-6">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Sign In
                       </PremiumButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64 glass-strong border-white/20 rounded-xl p-2">
-                      <div className="p-2">
-                        <DropdownMenuItem asChild className="text-white hover:glass focus:glass px-4 py-3 rounded-lg flex items-center gap-3">
-                          <Link href="/auth/login">
-                            <LogIn className="h-4 w-4 text-cyan-400" />
-                            <span>Sign In</span>
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild className="text-white hover:glass focus:glass px-4 py-3 rounded-lg flex items-center gap-3">
-                          <Link href="/auth/signup">
-                            <User className="h-4 w-4 text-cyan-400" />
-                            <span>Sign Up</span>
-                          </Link>
-                        </DropdownMenuItem>
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </Link>
+                    <Link href="/auth/signup" passHref>
+                      <PremiumButton variant="neon" glowColor="blue" className="h-12 px-6">
+                        <User className="mr-2 h-4 w-4" />
+                        Sign Up
+                      </PremiumButton>
+                    </Link>
+                  </div>
                 )}
 
                 {/* Mobile Menu Button */}
@@ -284,8 +263,8 @@ const UnifiedHeader = memo(function UnifiedHeader() {
                           <User className="h-5 w-5 text-white" />
                         </div>
                         <div className="flex flex-col">
-                          <p className="text-sm font-semibold text-white">{user.name}</p>
-                          <p className="text-xs text-white/70">{user.email}</p>
+                          <p className="text-sm font-semibold text-white">{user?.name}</p>
+                          <p className="text-xs text-white/70">{user?.email}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
