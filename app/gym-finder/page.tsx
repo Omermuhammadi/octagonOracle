@@ -1,314 +1,317 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, useMemo } from "react"
-import { Filter, MapPin, Search, Navigation } from "lucide-react"
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { MapPin, Search, AlertCircle, Dumbbell } from "lucide-react"
+import PageContainer from "@/components/layout/page-container"
+import Section from "@/components/layout/section"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsList } from "@/components/ui/tabs"
-import PageHeader from "@/components/layout/page-header"
-import LoadingSpinner from "@/components/layout/loading-spinner"
-import { gymsDatabase, type Gym } from "@/lib/mock-data/gyms"
+import dynamic from 'next/dynamic'
+import GymCard from '@/components/gym-finder/GymCard'
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { MockGym } from '@/lib/real-gym-data'
+import { useDebounce } from '@/lib/utils'
 
-export default function GymFinderPage() {
-  // State for search and filtering
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedDistance, setSelectedDistance] = useState(10)
-  const [selectedSpecialty, setSelectedSpecialty] = useState("all")
-  const [selectedPriceRange, setSelectedPriceRange] = useState("all")
-  const [sortBy, setSortBy] = useState("distance")
-  const [isLoading, setIsLoading] = useState(false)
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
-  const [favoriteGyms, setFavoriteGyms] = useState<number[]>([])
-  const [selectedGym, setSelectedGym] = useState<Gym | null>(null)
-  const [showMap, setShowMap] = useState(false)
-
-  // Simulate getting user location
-  useEffect(() => {
-    setIsLoading(true)
-    setTimeout(() => {
-      setUserLocation({ lat: 34.0522, lng: -118.2437 }) // Los Angeles
-      setIsLoading(false)
-    }, 1000)
-  }, [])
-
-  // Calculate distance between two points (simplified)
-  const calculateDistance = (gym: Gym) => {
-    if (!userLocation) return Number.parseFloat(gym.distance)
-    
-    // Simplified distance calculation for demo
-    const latDiff = Math.abs(gym.coordinates.lat - userLocation.lat)
-    const lngDiff = Math.abs(gym.coordinates.lng - userLocation.lng)
-    const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 69 // Rough miles conversion
-    return Math.round(distance * 10) / 10
-  }
-
-  // Filter and sort gyms
-  const filteredGyms = useMemo(() => {
-    const filtered = gymsDatabase.filter((gym) => {
-      // Search filter
-      const matchesSearch = searchTerm === "" || 
-        gym.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gym.specialties.some(specialty => 
-          specialty.toLowerCase().includes(searchTerm.toLowerCase())
-        ) ||
-        gym.city.toLowerCase().includes(searchTerm.toLowerCase())
-
-      // Distance filter
-      const gymDistance = calculateDistance(gym)
-      const matchesDistance = gymDistance <= selectedDistance
-
-      // Specialty filter
-      const matchesSpecialty = selectedSpecialty === "all" || 
-        gym.specialties.includes(selectedSpecialty)
-
-      // Price range filter
-      const matchesPriceRange = selectedPriceRange === "all" || 
-        gym.priceRange === selectedPriceRange
-
-      return matchesSearch && matchesDistance && matchesSpecialty && matchesPriceRange
-    })
-
-    // Sort gyms
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "distance":
-          return calculateDistance(a) - calculateDistance(b)
-        case "rating":
-          return b.rating - a.rating
-        case "reviews":
-          return b.reviews - a.reviews
-        case "price-low":
-          return a.priceRange.length - b.priceRange.length
-        case "price-high":
-          return b.priceRange.length - a.priceRange.length
-        default:
-          return 0
-      }
-    })
-
-    return filtered
-  }, [searchTerm, selectedDistance, selectedSpecialty, selectedPriceRange, sortBy, userLocation])
-
-  // Handle search with debounce
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value)
-  }
-
-  // Toggle favorite gym
-  const toggleFavorite = (gymId: number) => {
-    setFavoriteGyms(prev => 
-      prev.includes(gymId) 
-        ? prev.filter(id => id !== gymId)
-        : [...prev, gymId]
+// Import GymMap with dynamic import to prevent SSR issues with Leaflet
+// This is necessary because Leaflet relies on browser APIs
+const GymMap = dynamic(
+  () => import('@/components/gym-finder/GymMap'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="h-[500px] w-full rounded-lg bg-[#2a2a2a] border border-white/10 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 text-cyan-400 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          <p className="text-white/50 text-lg">Loading map component...</p>
+        </div>
+      </div>
     )
   }
+)
 
-  // Handle gym selection
-  const handleGymSelect = (gym: Gym) => {
-    setSelectedGym(gym)
+export default function GymFinder() {
+  const [mainPageSearchInput, setMainPageSearchInput] = useState('') // Renamed from searchInput
+  const [gymListFilterInput, setGymListFilterInput] = useState('')
+  const debouncedGymListFilter = useDebounce(gymListFilterInput, 300)
+  const [searchQuery, setSearchQuery] = useState<string | undefined>(undefined)
+  const [selectedGymId, setSelectedGymId] = useState<string | null>(null)
+  const [searchMessage, setSearchMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [isSearchMode, setIsSearchMode] = useState(false)
+  const [displayedGyms, setDisplayedGyms] = useState<MockGym[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const mapComponentRef = useRef<any>(null)
+
+  // Example: If you have static gyms, import and use them here
+  // import { staticGyms } from '@/lib/static-gym-data'
+  const staticGyms: MockGym[] = [] // Replace with actual static gyms if available
+
+  // Merge displayedGyms (from map) and staticGyms, avoid duplicates, and add a 'source' property
+  const mergedGyms = [
+    ...displayedGyms.map(g => ({ ...g, source: 'map' as const })),
+    ...staticGyms
+      .filter(sg => !displayedGyms.some(g => g.id === sg.id))
+      .map(g => ({ ...g, source: 'static' as const }))
+  ]
+  
+  // New state variables for Task 1
+  const [mapRef, setMapRef] = useState<any>(null)
+  const [searchLocation, setSearchLocation] = useState<string | null>(null)
+  const [mapGyms, setMapGyms] = useState<MockGym[]>([])
+  
+  // Handle clicking "View on Map" for a gym
+  const handleViewOnMap = (id: string) => {
+    setSelectedGymId(id)
+    // Scroll to map
+    const mapElement = document.getElementById('gym-map')
+    if (mapElement) {
+      mapElement.scrollIntoView({ behavior: 'smooth' })
+    }
+    
+    // Tell map component to focus on this gym
+    if (mapComponentRef.current?.focusGym) {
+      mapComponentRef.current.focusGym(id);
+    }
   }
-
-  // Get unique specialties for filter
-  const allSpecialties = Array.from(
-    new Set(gymsDatabase.flatMap(gym => gym.specialties))
-  ).sort()
-
-  // Apply filters with loading state
-  const applyFilters = () => {
-    setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 500)
+  
+  // Detect if search term looks like a location
+  const isLocationSearch = (term: string): boolean => {
+    // Common location indicators
+    const locationKeywords = [
+      'street', 'road', 'avenue', 'lane', 'drive', 'boulevard', 'plaza',
+      'markaz', 'sector', 'block', 'phase', 'area', 'town', 'city',
+      'islamabad', 'f-', 'g-', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11',
+      'g6', 'g7', 'g8', 'g9', 'g10', 'g11'
+    ]
+    
+    const lowercaseTerm = term.toLowerCase()
+    return locationKeywords.some(keyword => lowercaseTerm.includes(keyword))
   }
+  
+  // Handle search (renamed from filterGyms)
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (mainPageSearchInput.trim()) {
+      // Check if this looks like a location search
+      if (isLocationSearch(mainPageSearchInput)) {
+        // Set location search
+        setSearchLocation(mainPageSearchInput.trim())
+        setSearchQuery(mainPageSearchInput.trim())
+      } else {
+        // Regular filter search (no location)
+        setSearchLocation(null)
+        setSearchQuery(undefined)
+      }
+      
+      // Clear previous search message
+      setSearchMessage(null)
+      // Show loading state
+      setIsLoading(true)
+      setIsSearchMode(true)
+    }
+  }
+  
+  // Handle gyms loaded from map component
+  const handleGymsLoaded = useCallback((gyms: MockGym[]) => {
+    setDisplayedGyms(gyms);
+    setMapGyms(gyms); // Store map gyms separately
+    setIsLoading(false);
+  }, []);
+  
+  // Handle search completion from map component
+  const handleSearchComplete = useCallback((success: boolean, message?: string) => {
+    if (!success && message) {
+      setSearchMessage({
+        type: 'error',
+        text: message
+      });
+      setIsLoading(false);
+    } else if (success) {
+      setSearchMessage({
+        type: 'success',
+        text: message || 'Location found!'
+      });
+      setIsSearchMode(true);
+      setIsLoading(false);
+    }
+  }, []);
+  
+  // Clear search message when input changes
+  useEffect(() => {
+    if (searchMessage) {
+      setSearchMessage(null)
+    }
+  }, [mainPageSearchInput]) // Corrected dependency
+
+  // Derived state for the final list of gyms to display, after applying the debounced filter
+  const finalFilteredGyms = useMemo(() => {
+    if (!debouncedGymListFilter) {
+      return mergedGyms;
+    }
+    return mergedGyms.filter(gym => {
+      const filterText = debouncedGymListFilter.toLowerCase();
+      return (
+        gym.name.toLowerCase().includes(filterText) ||
+        gym.type.toLowerCase().includes(filterText) ||
+        gym.address.toLowerCase().includes(filterText)
+      );
+    });
+  }, [mergedGyms, debouncedGymListFilter]);
+
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a]">
-      <PageHeader
-        title="Find Your Perfect Gym"
-        description="Discover martial arts gyms and training centers near you"
-      >
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            className="border-[#00d4ff] text-[#00d4ff] hover:bg-[#00d4ff]/10"
-            onClick={() => setShowMap(!showMap)}
-          >
-            <MapPin className="mr-2 h-4 w-4" />
-            {showMap ? "Hide Map" : "Show Map"}
-          </Button>
-          <Button className="bg-[#d20a11] hover:bg-[#d20a11]/90">
-            <Navigation className="mr-2 h-4 w-4" />
-            Get Directions
-          </Button>
-        </div>
-      </PageHeader>
-
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Search and Filters */}
-        <Card className="border-[#333333] bg-[#2a2a2a]/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Filter className="h-5 w-5 text-[#00d4ff]" />
-              Search & Filter
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+    <>
+      <Section spacing="lg" background="default">
+        <PageContainer>
+          <div className="flex flex-col items-center text-center max-w-3xl mx-auto py-8">
+            <div className="flex items-center justify-center mb-6">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg glow-blue">
+                <MapPin className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-white mb-4">
+              Gym Finder
+            </h1>
+            <p className="text-xl text-white/70 mb-8">
+              Find the best martial arts academies and training facilities near you.
+            </p>
+            
+            {/* Search form - Updated to use handleSearch */}
+            <form onSubmit={handleSearch} className="w-full max-w-xl">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/50" />
                 <Input
-                  placeholder="Search gyms or martial arts..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  className="pl-10 bg-[#1a1a1a] border-[#333333] text-white placeholder:text-white/50"
+                  placeholder="Search for a location, city, or address..."
+                  className="pl-10 h-12 w-full border-white/10 bg-[#2a2a2a] text-white placeholder:text-white/50"
+                  value={mainPageSearchInput}
+                  onChange={(e) => setMainPageSearchInput(e.target.value)}
                 />
+                <Button 
+                  type="submit" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 bg-cyan-500 hover:bg-cyan-600"
+                >
+                  Find
+                </Button>
               </div>
 
-              <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
-                <SelectTrigger className="bg-[#1a1a1a] border-[#333333] text-white">
-                  <SelectValue placeholder="Martial Art" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#2a2a2a] border-[#333333]">
-                  <SelectItem value="all" className="text-white hover:bg-[#333333]">
-                    All Martial Arts
-                  </SelectItem>
-                  {allSpecialties.map((specialty) => (
-                    <SelectItem key={specialty} value={specialty} className="text-white hover:bg-[#333333]">
-                      {specialty}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Search message/alert */}
+              {searchMessage && (
+                <Alert 
+                  className={`mt-4 ${
+                    searchMessage.type === 'error' 
+                      ? 'bg-red-900/20 border-red-900/50 text-red-200' 
+                      : 'bg-green-900/20 border-green-900/50 text-green-200'
+                  }`}
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{searchMessage.text}</AlertDescription>
+                </Alert>
+              )}
+            </form>
+          </div>
+        </PageContainer>
+      </Section>
 
-              <Select value={selectedPriceRange} onValueChange={setSelectedPriceRange}>
-                <SelectTrigger className="bg-[#1a1a1a] border-[#333333] text-white">
-                  <SelectValue placeholder="Price Range" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#2a2a2a] border-[#333333]">
-                  <SelectItem value="all" className="text-white hover:bg-[#333333]">
-                    Any Price
-                  </SelectItem>
-                  <SelectItem value="$" className="text-white hover:bg-[#333333]">
-                    $ - Budget
-                  </SelectItem>
-                  <SelectItem value="$$" className="text-white hover:bg-[#333333]">
-                    $$ - Moderate
-                  </SelectItem>
-                  <SelectItem value="$$$" className="text-white hover:bg-[#333333]">
-                    $$$ - Premium
-                  </SelectItem>
-                  <SelectItem value="$$$$" className="text-white hover:bg-[#333333]">
-                    $$$$ - Luxury
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="bg-[#1a1a1a] border-[#333333] text-white">
-                  <SelectValue placeholder="Sort By" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#2a2a2a] border-[#333333]">
-                  <SelectItem value="distance" className="text-white hover:bg-[#333333]">
-                    Distance
-                  </SelectItem>
-                  <SelectItem value="rating" className="text-white hover:bg-[#333333]">
-                    Highest Rated
-                  </SelectItem>
-                  <SelectItem value="reviews" className="text-white hover:bg-[#333333]">
-                    Most Reviews
-                  </SelectItem>
-                  <SelectItem value="price-low" className="text-white hover:bg-[#333333]">
-                    Price: Low to High
-                  </SelectItem>
-                  <SelectItem value="price-high" className="text-white hover:bg-[#333333]">
-                    Price: High to Low
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label className="text-white mb-2 block">
-                  Distance: {selectedDistance} miles
-                </Label>
-                <Slider
-                  value={[selectedDistance]}
-                  onValueChange={(value) => setSelectedDistance(value[0])}
-                  max={25}
-                  min={1}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
-
-              <Button onClick={applyFilters} className="bg-[#00d4ff] hover:bg-[#00d4ff]/90 text-black">
-                {isLoading ? (
-                  <>
-                    <LoadingSpinner size="sm" className="mr-2" />
-                    Searching...
-                  </>
-                ) : (
-                  "Apply Filters"
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Map Placeholder */}
-        {showMap && (
-          <Card className="border-[#333333] bg-[#2a2a2a]/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-[#d20a11]" />
-                Map View
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 bg-[#1a1a1a] rounded-lg border border-[#333333] flex items-center justify-center relative overflow-hidden">
-                <div className="text-center text-white/70">
-                  <MapPin className="h-12 w-12 mx-auto mb-4 text-[#00d4ff]" />
-                  <p className="text-lg font-medium">Interactive Map</p>
-                  <p className="text-sm">Showing {filteredGyms.length} gyms in your area</p>
-                </div>
-                {/* Simulated map pins */}
-                {filteredGyms.slice(0, 5).map((gym, index) => (
-                  <div
-                    key={gym.id}
-                    className="absolute bg-[#d20a11] text-white text-xs px-2 py-1 rounded cursor-pointer hover:bg-[#d20a11]/80"
-                    style={{
-                      left: `${20 + index * 15}%`,
-                      top: `${30 + index * 10}%`,
-                    }}
-                    onClick={() => handleGymSelect(gym)}
-                  >
-                    {gym.name.split(' ')[0]}
+      <Section spacing="lg" background="muted">
+        <PageContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left side: Map */}
+            <div className="lg:col-span-2" id="gym-map">
+              <Card className="border-white/10 bg-[#1a1a1a] shadow-xl overflow-hidden">
+                <CardHeader className="border-b border-white/10">
+                  <CardTitle className="text-2xl text-white">
+                    {isSearchMode ? 'Gyms Near Search Location' : 'Nearby Gyms'}
+                  </CardTitle>
+                  <CardDescription className="text-white/70">
+                    Find martial arts gyms in your area
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="w-full">
+                    <GymMap
+                      ref={mapComponentRef}
+                      searchQuery={searchLocation || undefined}
+                      onGymsLoaded={(gyms) => {
+                        setDisplayedGyms(gyms);
+                        setIsLoading(false);
+                      }}
+                      onSearchComplete={(success, message) => {
+                        if (success) {
+                          setSearchMessage({ type: 'success', text: message || 'Location found!' });
+                        } else {
+                          setSearchMessage({ type: 'error', text: message || 'Could not find gyms for this location.' });
+                        }
+                        setIsLoading(false);
+                      }}
+                    />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Results Summary */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-white">
-            Found {filteredGyms.length} gym{filteredGyms.length !== 1 ? "s" : ""} near you
-          </h2>
-          {userLocation && (
-            <div className="text-white/70 text-sm">
-              📍 Searching within {selectedDistance} miles of your location
+                </CardContent>
+              </Card>
             </div>
-          )}
-        </div>
 
-        {/* Gym Listings */}
-        <Tabs defaultValue="list" className="space-y-6">
-          <TabsList className="bg-[#2a2a2a] border-[#333\
+            {/* Right side: Gym list */}
+            <div>
+              <div className="sticky top-24">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-white">
+                    {isSearchMode ? 'Gyms Near Search Location' : 'Nearby Gyms'}
+                  </h2>
+                  <span className="text-white/70 text-sm">
+                    {finalFilteredGyms.length} found
+                  </span>
+                </div>
+                
+                {/* Gym list filter */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+                    <Input
+                      placeholder="Filter gyms..."
+                      className="pl-9 h-10 w-full border-white/10 bg-[#2a2a2a] text-white placeholder:text-white/50"
+                      value={gymListFilterInput}
+                      onChange={(e) => setGymListFilterInput(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                {/* Gym list */}
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 gym-scrollbar">
+                  {isLoading ? (
+                    <div className="text-center py-8">
+                      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+                      <p className="mt-4 text-white/50">Loading gyms...</p>
+                    </div>
+                  ) : finalFilteredGyms.length === 0 ? (
+                    <div className="text-center py-8 bg-[#2a2a2a] rounded-lg border border-white/10 p-6">
+                      <Dumbbell className="h-12 w-12 text-white/20 mx-auto mb-4" />
+                      <p className="text-white/50 text-lg mb-2">No gyms found</p>
+                      <p className="text-white/30 text-sm">Try a different search term or location, or check the map.</p>
+                    </div>
+                  ) : (
+                    finalFilteredGyms.map((gym: MockGym & { source: 'map' | 'static' }) => (
+                      <div 
+                        key={gym.id} 
+                        className={`relative rounded-lg transition-all ${selectedGymId === gym.id ? 'ring-2 ring-cyan-400 shadow-lg' : 'ring-0'}`}
+                      >
+                        <GymCard
+                          {...gym} // Spread gym properties
+                          onViewOnMap={() => handleViewOnMap(gym.id)} // Rename to onViewOnMap
+                        />
+                        <span
+                          className={`absolute top-2 right-2 px-2 py-0.5 rounded text-xs font-semibold ${gym.source === 'map' ? 'bg-cyan-700 text-cyan-100' : 'bg-gray-700 text-gray-200'}`}
+                          title={gym.source === 'map' ? 'From Map Search' : 'Static Gym Data'}
+                        >
+                          {gym.source === 'map' ? 'Map' : 'Static'}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </PageContainer>
+      </Section>
+    </>
+  )
+}

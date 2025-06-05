@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { AlertCircle, Bell, Globe, Lock, Mail, Smartphone, User } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 
 export default function SettingsPage() {
   // Mock user data

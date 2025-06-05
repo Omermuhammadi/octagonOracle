@@ -656,3 +656,22 @@
   will-change: transform, opacity;
   transform: translateZ(0);
 }
+
+/* Add custom scrollbar for the gym list */
+.gym-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gym-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.gym-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.gym-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

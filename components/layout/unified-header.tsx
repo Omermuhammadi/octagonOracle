@@ -17,6 +17,7 @@ import {
   Home,
   Zap,
   LogIn,
+  MapPin,
 } from "lucide-react"
 import { PremiumButton } from "@/components/ui/premium-button"
 import {
@@ -36,6 +37,7 @@ const navigationItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "Fight Analysis", href: "/dashboard", icon: BarChart3 },
   { name: "Training", href: "/training", icon: Target },
+  { name: "Gym Finder", href: "/gym-finder", icon: MapPin },
   { name: "Store", href: "/store", icon: ShoppingBag },
 ]
 
